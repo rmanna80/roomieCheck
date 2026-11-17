@@ -122,7 +122,9 @@ begin
     when 'spark' then
       v_status := 'proposed';
       v_starts := coalesce((d ->> 'plan_at')::timestamptz, v_starts);
-      v_expires := coalesce(p_expires_at, coalesce(v_starts, now() + interval '2 hours') + interval '3 hours');
+      -- Spontaneous sparks (no plan time) stay open 2 hours; planned ones until 3 hours after.
+      v_expires := coalesce(p_expires_at, case when v_starts is null then now() + interval '2 hours'
+                                               else v_starts + interval '3 hours' end);
     when 'return' then
       if v_starts is null then
         raise exception 'eta_required' using errcode = '22023';

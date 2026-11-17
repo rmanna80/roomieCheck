@@ -1,0 +1,42 @@
+# Supabase CLI configuration (local development + deploy settings).
+# Docs: https://supabase.com/docs/guides/local-development/cli/config
+project_id = "homepulse"
+
+[api]
+schemas = ["public", "graphql_public"]   # `private` and `analytics` are deliberately NOT exposed
+extra_search_path = ["public", "extensions"]
+max_rows = 500
+
+[db]
+major_version = 15
+
+[realtime]
+enabled = true
+
+[auth]
+site_url = "homepulse://"
+additional_redirect_urls = []
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+enable_confirmations = false
+otp_length = 6
+otp_expiry = 600
+max_frequency = "30s"
+
+# Email one-time codes: the template must include {{ .Token }}.
+[auth.email.template.magic_link]
+subject = "Your HomePulse code"
+content_path = "./supabase/templates/magic_link.html"
+
+[auth.rate_limit]
+email_sent = 30
+
+[functions.send-push]
+verify_jwt = false   # called by a Database Webhook / cron with x-webhook-secret instead
+
+[functions.delete-account]
+verify_jwt = true

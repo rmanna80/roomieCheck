@@ -39,13 +39,27 @@ describe('Scenario E — movie night', () => {
     assert.equal((await admin('select 1 from public.events where signal_id = $1', [sid])).length, 1);
   });
 
+  test('a spontaneous spark (no plan time) stays open for two hours', async () => {
+    const house = await createHouse(['Nyx', 'Oz']);
+    const [nyx] = house.members;
+    const sid = await nyx.rpc<string>('create_signal', { p_household: house.id, p_kind: 'spark', p_title: 'Coffee run?' });
+    await admin('select private.expire_signals()');
+    const [s] = await admin<{ status: string; minutes: number }>(
+      `select status, round(extract(epoch from expires_at - created_at) / 60)::int as minutes from public.signals where id = $1`, [sid]);
+    assert.deepEqual(s, { status: 'proposed', minutes: 120 });
+  });
+
   test('a spark nobody joins expires quietly at its planned time', async () => {
     const house = await createHouse(['Lux', 'Moe']);
     const [lux] = house.members;
     const sid = await lux.rpc<string>('create_signal', {
       p_household: house.id, p_kind: 'spark', p_title: 'Gym?', p_details: { plan_at: inMinutes(30) },
     });
-    await admin(`update public.signals set starts_at = now() - interval '1 minute' where id = $1`, [sid]);
+    await admin(`update public.signals set starts_at = now() - interval '10 minutes' where id = $1`, [sid]);
+    await admin('select private.expire_signals()');
+    const [grace] = await admin<{ status: string }>('select status from public.signals where id = $1', [sid]);
+    assert.equal(grace.status, 'proposed', 'late joiners get 15 minutes of grace');
+    await admin(`update public.signals set starts_at = now() - interval '16 minutes' where id = $1`, [sid]);
     await admin('select private.expire_signals()');
     const [s] = await admin<{ status: string }>('select status from public.signals where id = $1', [sid]);
     assert.equal(s.status, 'expired');

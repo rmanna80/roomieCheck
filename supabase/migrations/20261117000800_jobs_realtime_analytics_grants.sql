@@ -23,9 +23,10 @@ begin
   where status = 'proposed' and kind = 'space'
     and id in (select signal_id from public.space_windows where state = 'declined');
 
-  -- Sparks that never gathered enough people by their planned time.
+  -- Sparks that never gathered enough people by their planned time (15 minutes' grace).
   update public.signals set status = 'expired', resolved_at = now()
-  where status = 'proposed' and kind = 'spark' and starts_at is not null and starts_at <= now();
+  where status = 'proposed' and kind = 'spark' and starts_at is not null
+    and starts_at <= now() - interval '15 minutes';
 
   update public.signals set status = 'expired', resolved_at = now()
   where status in ('proposed', 'active') and expires_at <= now();

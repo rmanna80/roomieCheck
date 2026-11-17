@@ -97,7 +97,12 @@ begin
       'signals', 'signal_responses', 'signal_comments', 'run_items', 'space_windows',
       'space_window_approvals', 'reset_tasks', 'member_statuses', 'chores', 'events', 'notifications'
     ] loop
-      execute format('alter publication supabase_realtime add table public.%I', t);
+      if not exists (
+        select 1 from pg_publication_tables
+        where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t
+      ) then
+        execute format('alter publication supabase_realtime add table public.%I', t);
+      end if;
     end loop;
   end if;
 end;

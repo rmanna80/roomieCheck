@@ -1,3 +1,21 @@
+# HomePulse — notes for coding agents
+
+Read `docs/03-architecture.md` before changing data or auth code. Project rules:
+
+- **Writes go through RPCs** (`SECURITY DEFINER`, `set search_path = ''`, fully-qualified names,
+  stable error codes as messages). Reads go through RLS. Never add a client-side-only permission check.
+- **Every new table** gets RLS + a privacy test in `supabase/tests/privacy.test.ts`. Revoke
+  `execute` on new functions from `public`/`anon` (platform default privileges grant it).
+- **No surveillance or shaming features**: no location, no scores/streaks/rankings, declines never
+  notify. See "Explicitly not planned" in `docs/roadmap.md`.
+- All server calls live in `src/lib/api.ts`; query keys in `src/lib/queries.ts`; pure logic in
+  `src/lib/*.ts` with tests in `src/lib/logic.test.ts` (no React Native imports there).
+- `npx expo install` needs network access to Expo's API; offline, pin versions from
+  `node_modules/expo/bundledNativeModules.json` instead.
+- Before declaring done: `npm run typecheck && npm run lint && npm run test:unit && npm run test:db`.
+
+---
+
 This is an Expo/React Native mobile application. Prioritize mobile-first patterns, performance, and cross-platform compatibility.
 
 ## Expo has changed — do not trust your training data
